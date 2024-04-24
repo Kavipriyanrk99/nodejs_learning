@@ -1,0 +1,70 @@
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const fsPromises = require('fs').promises;
+const path = require('path');
+const {logger} = require('./middleware/logEvents');
+const cors = require('cors');
+const { error } = require('console');
+const { errorHandler } = require('./middleware/errHandler');
+const mongoose = require('mongoose');
+const {connectDB} = require('./config/dbConn');
+
+const PORT = process.env.PORT || 3000;
+
+//CONNECT TO MONGODB
+connectDB();
+
+//MIDDLEWARES
+//--> functions that have access to the request object (req), the response object (res), and the next middleware function in the application’s request-response cycle. 
+//--> 'next' middleware function is commonly denoted by a variable named next.
+//--> types in-built, custom, third-party
+//--> app.use() to specify middleware as the callback function
+
+//CUSTOM MIDDLEWARE - logger
+app.use(logger);
+
+//THIRD PARTY MIDDLEWARE - CORS
+//--> npm i cors
+app.use(cors(require('./config/corsOptions')));
+
+//BUILT-IN MIDDLEWARES
+//--> express.urlencoded() and express.json() -- used to parse request bodies that are encoded in JSON or URL-encoded format
+//--> express.static() -- used to serve static files, such as HTML, CSS, and JavaScript files, from a directory on the filesystem
+app.use(express.urlencoded({extended : false}));
+app.use(express.json());
+app.use('/',express.static(path.join(__dirname, 'public'))); //means serve static files in public dir to root directory files
+
+//EXPRESS ROUTER
+//--> an isolated instance of middleware and routes. You can think of it as a “mini-application,” capable only of performing middleware and routing functions
+//ROUTER FOR subdir
+app.use('/subdir', require('./routes/subdir'));
+//ROUTER FOR API
+app.use('/employee', require('./routes/API/employee'));
+
+app.get('^/$|/home(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+})
+
+app.get('/new(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', 'new-page.html'));
+})
+
+app.get('/old(.html)?', (req, res)=>{
+    res.redirect('/new');
+})
+
+//--> app.all() to handle all HTTP methods 
+app.all('*', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', '404.html'));
+})
+
+//CUSTOM MIDDLEWARE - errorHandler
+app.use(errorHandler);
+
+//LISTENING FOR DB CONNECTION
+//open: Emitted after 'connected'
+mongoose.connection.once('open', ()=>{
+    console.log(`connected to MongoDB ${process.env.DATABASE_URI}`);
+    app.listen(PORT, ()=>{console.log(`server is running at port ${PORT}`)});
+})

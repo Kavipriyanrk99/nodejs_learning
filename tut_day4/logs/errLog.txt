@@ -1,0 +1,8 @@
+02/07/2023	20:41:59	39c7312d-b352-4c28-8cd8-063aadea24eb	Error: Not allowed by CORS https://itsfoss.com
+02/07/2023	21:04:15	6d069f6e-9edc-43f2-ab49-e962450a4453	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:04:23	447ad80d-eb62-4780-9553-a57286aeef8d	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:14:49	47978f3d-9c76-4dd2-82a0-b695683f3718	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:17:12	e6445cde-55e9-4c35-958c-ae628b29fa0e	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:17:17	bd1680f4-d563-41d9-b537-718daffb003a	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:19:24	22c3d719-4795-4839-a4ea-bb431560e784	Error: ENOENT: no such file or directory, stat 'D:\Desktop\Web\Node_tut\tut_day4\routes\views\index.html'
+02/07/2023	21:46:52	9e1af367-a99a-432b-a47b-4bda862ce846	TypeError: res.json is not a function

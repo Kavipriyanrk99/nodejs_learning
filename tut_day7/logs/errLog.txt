@@ -1,0 +1,3 @@
+02/07/2023	16:57:20	9c004d10-32a9-4669-9aef-7fe83a31c355	Error: Not allowed by CORS
+02/07/2023	16:58:47	32a7d380-267e-4d88-bf3a-c6957bbdb1cd	Error: Not allowed by CORS https://itsfoss.com
+02/07/2023	17:06:21	c733eaa9-1dc7-45c6-b073-6a46755e2fbd	Error: Not allowed by CORS https://itsfoss.com

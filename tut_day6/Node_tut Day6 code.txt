@@ -1,0 +1,159 @@
+<------------------------------------------/config/dbConn.js------------------------------------------------------->
+
+//MONGOOSE
+//--> Mongoose is an Object-Document Mapping (ODM) library for Node.js and MongoDB.
+//--> provides a straightforward way to define data models, interact with MongoDB databases, and perform database operations using JavaScript objects
+//--> Data Models: Models allow you to create, read, update, and delete documents in the database
+//--> Mongoose models are derived from schemas
+//--> A schema is a blueprint that defines the structure and properties of documents within a collection. It specifies the fields, their types, validation rules, and default values
+//--> npm i mongoose
+//--> More details -- https://mongoosejs.com/
+
+//--> useUnifiedTopology: true: This option tells Mongoose to use the new MongoDB Unified Topology engine for handling connections. It provides better scalability and handling of replica sets and sharded clusters.
+//--> useNewUrlParser: true: This option is used to enable the new URL parser in Mongoose. It is required when connecting to MongoDB using a connection string that includes the database hostname and port
+
+require('dotenv').config();
+const mongoose = require('mongoose');
+
+const connectDB = async()=>{
+    try{
+        await mongoose.connect(process.env.DATABASE_URI,{
+            useUnifiedTopology: true,
+            useNewUrlParser: true
+        })
+    } catch(err){
+        console.log(err);
+    }
+}
+
+module.exports = {connectDB};
+
+
+<---------------------------------------------/model/Employee.js------------------------------------------------------------>
+
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const employeeSchema = new Schema({
+    id : {
+        type : Number,
+        required : true
+    },
+    firstname : {
+        type : String,
+        required : true
+    },
+    lastname : {
+        type : String,
+        required : true
+    }
+});
+
+//MODEL
+//Models are fancy constructors compiled from Schema definitions. An instance of a model is called a document. Models are responsible for creating and reading documents from the underlying MongoDB database.
+//The first argument is the singular name of the collection your model is for. Mongoose automatically looks for the plural, lowercased version of your model name
+//the model Employee is for the 'employees' collection in the database
+module.exports = mongoose.model('Employee', employeeSchema);
+
+
+<--------------------------------------------------/controllers/employeeController.js------------------------------------------>
+
+/* Mongoose models provide several static helper functions for CRUD operations. Each of these functions returns a mongoose Query object.
+
+    Model.deleteMany()
+    Model.deleteOne()
+    Model.find()
+    Model.findById()
+    Model.findByIdAndDelete()
+    Model.findByIdAndRemove()
+    Model.findByIdAndUpdate()
+    Model.findOne()
+    Model.findOneAndDelete()
+    Model.findOneAndRemove()
+    Model.findOneAndReplace()
+    Model.findOneAndUpdate()
+    Model.replaceOne()
+    Model.updateMany()
+    Model.updateOne()
+ */
+const Employees = require('../model/Employee');
+
+const getAllEmployees = async( req, res)=>{
+    try{
+        const employees = await Employees.find().exec();
+        if(!employees) return res.status(204).json({'message' : 'No Employee found'});
+        res.status(200).json(employees);
+    }catch(err){
+        console.log(err);
+    }
+}
+
+const createNewEmployee = async( req, res)=>{
+    if (!req.body.firstname || !req.body.lastname) {
+        return res.status(400).json({ 'message': 'First and last names are required.' });
+    }
+    
+    try {
+        const new_id = await Employees.count({}) + 1;
+        //create and store the new employee
+        const result = await Employees.create({
+            id : new_id,
+            firstname : req.body.firstname,
+            lastname : req.body.lastname
+        });
+
+        res.status(201).json({ 'message': `New Employee created!` });
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const updateEmployee = async(req, res) => {
+    try{
+        const employee = await Employees.findOne({ id: parseInt(req.body.id) }).exec();
+
+        if (!employee) {
+            return res.status(204).json({ "message": `Employee ID ${req.body.id} not found` });
+        }
+        if (req.body.firstname) await Employees.updateOne({ id: parseInt(req.body.id) }, {firstname: req.body.firstname});
+        if (req.body.lastname) await Employees.updateOne({ id: parseInt(req.body.id) }, {lastname: req.body.lastname});
+        res.status(201).json({ 'message': `Employee ${req.body.id} updated!` });
+    }catch(err){
+        console.log(err);
+    }
+    
+}
+
+const deleteEmployee = async(req, res) => {
+    try{
+        const employee = await Employees.findOne({ id: parseInt(req.body.id) }).exec();
+        if (!employee) {
+            return res.status(204).json({ "message": `Employee ID ${req.body.id} not found` });
+        }
+        
+        await Employees.deleteOne({id: employee.id});
+        res.status(201).json({ 'message': `Employee ${req.body.id} deleted!` });
+    }catch(err){
+        console.log(err);
+    } 
+}
+
+const getEmployee = async(req, res) => {
+    try{
+        const employee = await Employees.findOne({ id: parseInt(req.params.id) }).exec();
+        if (!employee) {
+            return res.status(204).json({ "message": `Employee ID ${req.params.id} not found` });
+        }
+        res.json(employee);
+    }catch(err){
+        console.log(err);
+    }
+}
+
+module.exports = {
+    getAllEmployees,
+    createNewEmployee,
+    updateEmployee,
+    deleteEmployee,
+    getEmployee
+};

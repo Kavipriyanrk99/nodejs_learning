@@ -1,0 +1,227 @@
+<--------------------------SERVER.JS------------------------------->
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const path = require('path');
+const { logger } = require('./middleware/logEvents');
+const cors = require('cors');
+const { errorHandler } = require('./middleware/errHandler');
+
+const PORT = process.env.PORT || 3000;
+
+//MIDDLEWARES
+//--> functions that have access to the request object (req), the response object (res), and the next middleware function in the application’s request-response cycle. 
+//--> 'next' middleware function is commonly denoted by a variable named next.
+//--> types in-built, custom, third-party
+//--> app.use() to specify middleware as the callback function
+
+//CUSTOM MIDDLEWARE - logger
+app.use(logger);
+
+//THIRD PARTY MIDDLEWARE - CORS
+//--> npm i cors
+const whitelist = ['https://www.google.com', 'www.yoursite.com', 'https://www.youtube.com'];
+const corsOption = {
+    origin : (origin, callback)=>{
+        if(whitelist.indexOf(origin) !== -1 || !origin){
+            callback(null, true);
+        }else{
+            callback(new Error(`Not allowed by CORS ${origin}`))
+        } 
+    },
+    optionsSuccessStatus : 200
+}
+app.use(cors(corsOption));
+
+//BUILT-IN MIDDLEWARES
+//--> express.urlencoded() and express.json() -- used to parse request bodies that are encoded in JSON or URL-encoded format
+//--> express.static() -- used to serve static files, such as HTML, CSS, and JavaScript files, from a directory on the filesystem
+app.use(express.urlencoded({extended : false}));
+app.use(express.json());
+app.use('/', express.static(path.join(__dirname, 'public')));
+
+//EXPRESS ROUTER
+//--> an isolated instance of middleware and routes. You can think of it as a “mini-application,” capable only of performing middleware and routing functions
+//ROUTER FOR root
+app.use('/', require('./routes/root'));
+//ROUTER FOR subdir
+app.use('/subdir', require('./routes/subdir'));
+//ROUTER FOR employee
+app.use('/employee', require('./routes/API/employee'));
+
+/* app.get('^/$|/home(.html)?|index(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+});
+
+app.get('/new-page(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', 'new-page.html'));
+});
+
+app.get('/old', (req, res)=>{
+    res.redirect(301, '/');
+}); */
+
+//--> app.all() to handle all HTTP methods
+app.all('*', (req, res)=>{
+    res.sendFile(path.join(__dirname, 'views', '404.html'));
+});
+
+//CUSTOM MIDDLEWARE - errorHandler
+app.use(errorHandler);
+
+app.listen(PORT, ()=>{console.log(`server is running at PORT ${PORT}`)});
+
+
+<--------------------------middleware/logEvents.js------------------------------->
+const fs = require('fs');
+const fsPromises = fs.promises;
+const path = require('path');
+const date_fns = require('date-fns');
+const uuid = require('uuid');
+
+const logEvents = async(message, filename)=>{
+    try{
+        const logData = `${date_fns.format(new Date(), 'dd/MM/yyyy\tHH:mm:ss')}\t${uuid.v4()}\t${message}\n`;
+
+        if(!fs.existsSync(path.join(__dirname, '..', 'logs'))){
+            await fsPromises.mkdir(path.join(__dirname, '..', 'logs'));
+            console.log(`'logs' directory created`);
+        }
+
+        //Appending log history
+        await fsPromises.appendFile(path.join(__dirname, '..', 'logs', filename), logData);
+    }catch(err){
+        console.log(err);
+    }
+}
+
+const logger = (req, res, next)=>{
+    console.log(`${req.url}\t${req.headers.origin}\t${req.method}`);
+    logEvents(`${req.method}\t${req.headers.origin}\t${req.url}`, 'reqLog.txt');
+    next();
+}
+
+module.exports = {logEvents, logger};
+
+<--------------------------middleware/errHandler.js------------------------------->
+const {logEvents} = require('./logEvents');
+
+const errorHandler = (err, req, res, next)=>{
+    logEvents(`${err.name}: ${err.message}`, 'errLog.txt');
+    next();
+}
+
+module.exports = {errorHandler};
+
+
+
+<--------------------------routes/root.js------------------------------->
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+
+router.get('^/$|/home(.html)?|index(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, '..' ,'views', 'index.html'));
+});
+
+router.get('/new-page(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, '..','views', 'new-page.html'));
+});
+
+router.get('/old', (req, res)=>{
+    res.redirect(301, '/');
+});
+
+module.exports = router;
+
+
+<--------------------------routes/subdir.js------------------------------->
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+
+router.get('^/$|/home(.html)?|index(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, '..', 'views', 'subdir', 'index.html'));
+});
+
+router.get('/test(.html)?', (req, res)=>{
+    res.sendFile(path.join(__dirname, '..', 'views', 'subdir', 'test.html'));
+});
+
+module.exports = router;
+
+
+<--------------------------routes/API/employee.js------------------------------->
+const express = require('express');
+const router = express.Router();
+const employee = require('../../data/employee.json');
+
+//CRUD
+//C - create - post method
+//R - read - get method
+//U - update - put method
+//D - delete - delete method
+router.route('/')
+    .get((req, res)=>{
+        res.json(employee);
+    })
+    .post((req, res)=>{
+        res.json(
+            {
+                "firstname": req.body.firstname,
+                "lastname": req.body.lastname
+            }
+        );
+    })
+    .put((req, res)=>{
+        res.json(
+            {
+                "firstname": req.body.firstname,
+                "lastname": req.body.lastname
+            }
+        );
+    })
+    .delete((req, res)=>{
+        res.json(
+            {
+                "id" : req.body.id
+            }
+        );
+    });
+
+router.route('/:id')
+    .get((req, res)=>{
+        res.json(
+            {
+                "id" : req.params.id
+            }
+        );
+    });
+
+module.exports = router;
+
+
+
+<--------------------------data/employee.json------------------------------->
+[
+    {
+        "id" : 1,
+        "firstname" : "Kavipriyan",
+        "lastname" : "R. K."
+    },
+    {
+        "id" : 2,
+        "firstname" : "Sabarnika",
+        "lastname" : "Ji"
+    },
+    {
+        "id" : 3,
+        "firstname" : "Tony",
+        "lastname" : "Stark"
+    },
+    {
+        "id" : 4,
+        "firstname" : "Natasha",
+        "lastname" : "Romanoff"
+    }
+]
